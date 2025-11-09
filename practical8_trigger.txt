@@ -1,0 +1,61 @@
+-- Step 1: Create Database 
+DROP DATABASE IF EXISTS LibraryDB;
+CREATE DATABASE LibraryDB;
+USE LibraryDB;
+
+-- Step 2: Create Main Table 
+CREATE TABLE Library ( 
+    Book_ID INT PRIMARY KEY, 
+    Book_Name VARCHAR(100), 
+    Author VARCHAR(100), 
+    Price DECIMAL(10,2) 
+); 
+
+-- Step 3: Create Audit Table 
+CREATE TABLE Library_Audit ( 
+    Audit_ID INT AUTO_INCREMENT PRIMARY KEY, 
+    Book_ID INT, 
+    Book_Name VARCHAR(100), 
+    Author VARCHAR(100), 
+    Price DECIMAL(10,2), 
+    Operation VARCHAR(10),   -- UPDATE / DELETE 
+    Action_Date DATETIME 
+); 
+
+-- Step 4: Create Trigger for UPDATE 
+DELIMITER $$
+CREATE TRIGGER trg_library_audit_update
+AFTER UPDATE ON Library 
+FOR EACH ROW 
+BEGIN 
+    INSERT INTO Library_Audit(Book_ID, Book_Name, Author, Price, Operation, Action_Date) 
+    VALUES (OLD.Book_ID, OLD.Book_Name, OLD.Author, OLD.Price, 'UPDATE', NOW()); 
+END$$
+DELIMITER ;
+
+-- Step 5: Create Trigger for DELETE 
+DELIMITER $$
+CREATE TRIGGER trg_library_audit_delete
+AFTER DELETE ON Library 
+FOR EACH ROW 
+BEGIN 
+    INSERT INTO Library_Audit(Book_ID, Book_Name, Author, Price, Operation, Action_Date) 
+    VALUES (OLD.Book_ID, OLD.Book_Name, OLD.Author, OLD.Price, 'DELETE', NOW()); 
+END$$
+DELIMITER ;
+
+-- Step 6: Insert sample records 
+INSERT INTO Library VALUES (1, 'DBMS Concepts', 'Korth', 500); 
+INSERT INTO Library VALUES (2, 'PL/SQL Programming', 'Scott', 600); 
+
+-- Step 7: Update a record (fires UPDATE trigger) 
+UPDATE Library SET Price = 550 WHERE Book_ID = 1; 
+
+-- Step 8: Delete a record (fires DELETE trigger) 
+DELETE FROM Library WHERE Book_ID = 2; 
+
+-- Step 9: Check Audit Table 
+SELECT * FROM Library_Audit; 
+
+-- Step 10: Check Remaining Library Table 
+SELECT * FROM Library;
